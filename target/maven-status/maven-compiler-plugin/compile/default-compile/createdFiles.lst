@@ -1,0 +1,10 @@
+org\entity\TvShow.class
+org\service\StudentService.class
+org\resource\GreetingResource.class
+org\client\StudentClient.class
+org\secure\Authorize.class
+org\client\TvShowClient.class
+org\entity\Subject.class
+org\repository\StudentRepository.class
+org\resource\StudentResource.class
+org\entity\Student.class
