@@ -122,6 +122,18 @@
                 </configuration>
             </plugin>
             <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Main-Class>student.resource.GreetingResource</Main-Class>
+                            <!-- Add more attributes as needed -->
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
                 <executions>
