@@ -5,14 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
-@Path("/operation")
+@Path("/hello")
 public class GreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("")
-    public String hello(@HeaderParam("header") String header) {
-        return "Hello from Quarkus REST " + header;
+    public String hello() {
+        return "Hello there from Quarkus REST ";
     }
 
     @POST
@@ -24,4 +24,5 @@ public class GreetingResource {
         return mapper.writeValueAsString(a + b);
 
     }
+
 }

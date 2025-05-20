@@ -60,4 +60,37 @@ jobs:
             docker build -f src/main/docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
             docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
             echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >> $GITHUB_ENV
+  deploy:
+      needs: build
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v4
+          with:
+            aws-region: eu-central-1
+            role-to-assume: arn:aws:iam::751236674196:role/assume-role-with-actions
+
+        - name: Download task definition
+          run: |
+            aws ecs describe-task-definition --task-definition your-task-def-name \
+              --query taskDefinition > ecs-task-def.json
+
+        - name: Update task definition with new image
+          id: task-def
+          uses: aws-actions/amazon-ecs-render-task-definition@v1
+          with:
+            task-definition: ecs-task-def.json
+            container-name: quarkus-app
+            image: ${{ env.IMAGE_URI }}
+
+        - name: Deploy to ECS
+          uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+          with:
+            task-definition: ${{ steps.task-def.outputs.task-definition }}
+            service: quarkus-app
+            cluster: app-cluster
+            wait-for-service-stability: true
 
