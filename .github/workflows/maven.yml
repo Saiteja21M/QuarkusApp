@@ -17,6 +17,9 @@ on:
   # Optional: You can also trigger the workflow on a schedule
   # schedule:
   #   - cron: '0 0 * * *' # every day at midnight UTC
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build:
