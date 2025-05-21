@@ -1,15 +1,13 @@
 package student.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 
 @Entity
 public class Student extends PanacheEntityBase {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int studentId;
     private String name;
     private int age;

@@ -2,6 +2,8 @@ package student.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 import java.net.URL;
@@ -11,6 +13,7 @@ import java.util.Set;
 public class TvShow extends PanacheEntityBase {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int tvShowId;
     private URL url;
     private String name;
