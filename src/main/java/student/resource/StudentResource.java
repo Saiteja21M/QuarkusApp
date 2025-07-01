@@ -64,20 +64,6 @@ public class StudentResource {
         return studentService.deleteStudentById(id) ? studentService.getStudentDetails() : Response.notModified().build();
     }
 
-    @POST
-    @Path("/schedule-marks-calculation")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response scheduleMarksCalculation(@HeaderParam("Authorization") String authorization,
-                                           @QueryParam("studentName") String studentName,
-                                           @QueryParam("delaySeconds") int delaySeconds) {
-        if (!authorize.authorizeSender(authorization)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        }
-
-        studentService.scheduleStudentMarksCalculation(studentName, delaySeconds);
-        return Response.ok("Scheduled marks calculation for student: " + studentName).build();
-    }
-
     @DELETE
     @Path("/cancel-job")
     @Produces(MediaType.APPLICATION_JSON)

@@ -4,7 +4,6 @@ import io.quarkus.cache.CacheInvalidateAll;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.transaction.Transactional.TxType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
@@ -14,7 +13,6 @@ import student.client.StudentClient;
 import student.entity.Student;
 import student.entity.TvShow;
 import student.repository.StudentRepository;
-import student.scheduler.StudentMarksJob;
 
 import java.util.List;
 import java.util.Set;
@@ -43,9 +41,6 @@ public class StudentService {
         logger.infov("saved {0} student : ", student);
         invalidateAll();
 
-        // Schedule job after transaction completes
-        scheduleStudentMarksCalculationAsync(student.getName(), 10);
-
         return Response.ok(studentRepository.findById((long) student.getStudentId())).build();
     }
 
@@ -54,6 +49,25 @@ public class StudentService {
         logger.infov("fetched {0} student details", studentDetails);
         return Response.ok(studentDetails).build();
 
+    }
+
+    @Transactional
+    public void calculateAndSetTotalMarks() {
+        studentRepository.listAll()
+                .stream().filter(student -> student.getTotalMarks() == 0).forEach(student -> {
+                    if (student.getSubject() != null) {
+                        int totalMarks = student.getSubject().getEnglish() +
+                                student.getSubject().getTelugu() +
+                                student.getSubject().getMaths() +
+                                student.getSubject().getHindi();
+                        student.setTotalMarks(totalMarks);
+                        studentRepository.persist(student);
+                        logger.infov("Updated total marks for student {0}: {1}", student.getName(), totalMarks);
+                    } else {
+                        logger.warnv("No subject found for student: {0}", student.getName());
+                    }
+                });
+        invalidateAll();
     }
 
     public TvShow getStudentFavoriteShow() {
@@ -76,54 +90,6 @@ public class StudentService {
             invalidateAll();
         }
         return deleted;
-    }
-
-    /**
-     * Creates a one-time trigger to calculate marks for a specific student
-     * This method runs outside of any transaction context
-     */
-    @Transactional(TxType.NOT_SUPPORTED)
-    public void scheduleStudentMarksCalculation(String studentName, int delayInSeconds) {
-        try {
-            // Create a job detail
-            JobDetail jobDetail = JobBuilder.newJob(StudentMarksJob.class)
-                    .withIdentity("calculate-marks-" + studentName, "student-jobs")
-                    .usingJobData("studentName", studentName)
-                    .build();
-
-            // Create a trigger that fires once after the specified delay
-            Trigger trigger = TriggerBuilder.newTrigger()
-                    .withIdentity("trigger-marks-" + studentName, "student-triggers")
-                    .withSchedule(CronScheduleBuilder.cronSchedule("0 */5 * * * ?"))
-                    .build();
-
-            // Schedule the job
-            scheduler.scheduleJob(jobDetail, trigger);
-            logger.infov("Scheduled marks calculation for student {0} to run in {1} seconds", studentName, delayInSeconds);
-
-        } catch (SchedulerException e) {
-            logger.error("Failed to schedule job for student: " + studentName, e);
-        }
-    }
-
-    /**
-     * Async version that can be called from within a transaction
-     * Uses a separate thread to avoid transaction conflicts
-     */
-    public void scheduleStudentMarksCalculationAsync(String studentName, int delayInSeconds) {
-        // Execute in a separate thread to avoid transaction conflicts
-        new Thread(() -> {
-            try {
-                // Small delay to ensure current transaction completes
-                Thread.sleep(200);
-                scheduleStudentMarksCalculation(studentName, delayInSeconds);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                logger.error("Interrupted while scheduling job for student: " + studentName, e);
-            } catch (Exception e) {
-                logger.error("Error scheduling job for student: " + studentName, e);
-            }
-        }).start();
     }
 
     /**
@@ -200,18 +166,18 @@ public class StudentService {
     public boolean disableJob(String jobName, String groupName) {
         try {
             JobKey jobKey = JobKey.jobKey(jobName, groupName);
-            
+
             // Check if job exists first
             if (!scheduler.checkExists(jobKey)) {
                 logger.warnv("Job does not exist: {0}.{1}", groupName, jobName);
                 return false;
             }
-            
+
             // Pause the job - this disables all triggers for this job
             scheduler.pauseJob(jobKey);
             logger.infov("Successfully disabled job: {0}.{1}", groupName, jobName);
             return true;
-            
+
         } catch (SchedulerException e) {
             logger.error("Failed to disable job: " + jobName, e);
             return false;
@@ -224,18 +190,18 @@ public class StudentService {
     public boolean enableJob(String jobName, String groupName) {
         try {
             JobKey jobKey = JobKey.jobKey(jobName, groupName);
-            
+
             // Check if job exists first
             if (!scheduler.checkExists(jobKey)) {
                 logger.warnv("Job does not exist: {0}.{1}", groupName, jobName);
                 return false;
             }
-            
+
             // Resume the job - this re-enables all triggers for this job
             scheduler.resumeJob(jobKey);
             logger.infov("Successfully enabled job: {0}.{1}", groupName, jobName);
             return true;
-            
+
         } catch (SchedulerException e) {
             logger.error("Failed to enable job: " + jobName, e);
             return false;
@@ -248,33 +214,33 @@ public class StudentService {
     public Response getJobStatus(String jobName, String groupName) {
         try {
             JobKey jobKey = JobKey.jobKey(jobName, groupName);
-            
+
             if (!scheduler.checkExists(jobKey)) {
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity("Job not found: " + jobName + " in group: " + groupName).build();
             }
-            
+
             // Get all triggers for this job and their states
             List<? extends Trigger> triggers = scheduler.getTriggersOfJob(jobKey);
             List<java.util.Map<String, Object>> triggerStates = new java.util.ArrayList<>();
-            
+
             for (Trigger trigger : triggers) {
                 Trigger.TriggerState state = scheduler.getTriggerState(trigger.getKey());
                 triggerStates.add(java.util.Map.of(
-                    "triggerName", trigger.getKey().getName(),
-                    "triggerGroup", trigger.getKey().getGroup(),
-                    "state", state.toString(),
-                    "nextFireTime", trigger.getNextFireTime(),
-                    "previousFireTime", trigger.getPreviousFireTime()
+                        "triggerName", trigger.getKey().getName(),
+                        "triggerGroup", trigger.getKey().getGroup(),
+                        "state", state.toString(),
+                        "nextFireTime", trigger.getNextFireTime(),
+                        "previousFireTime", trigger.getPreviousFireTime()
                 ));
             }
-            
+
             return Response.ok().entity(java.util.Map.of(
-                "jobName", jobName,
-                "jobGroup", groupName,
-                "triggers", triggerStates
+                    "jobName", jobName,
+                    "jobGroup", groupName,
+                    "triggers", triggerStates
             )).build();
-            
+
         } catch (SchedulerException e) {
             logger.error("Failed to get job status: " + jobName, e);
             return Response.serverError().entity("Failed to get job status: " + e.getMessage()).build();
