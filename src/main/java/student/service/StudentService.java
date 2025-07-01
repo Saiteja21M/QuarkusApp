@@ -3,6 +3,7 @@ package student.service;
 import io.quarkus.cache.CacheInvalidateAll;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
@@ -26,6 +27,7 @@ public class StudentService {
     @Inject
     Logger logger;
 
+    @Transactional
     public Response calculateTotalMarks(Student student) {
 
         student.setTvShow(getStudentFavoriteShow());
