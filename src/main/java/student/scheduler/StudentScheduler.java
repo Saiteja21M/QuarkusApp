@@ -24,7 +24,7 @@ public class StudentScheduler {
     Logger logger;
 
     @Transactional
-    @Scheduled(every = "10m", identity = "calculate_student_total_marks")
+    @Scheduled(every = "1m", identity = "calculate_student_total_marks")
     public void calculateStudentTotalMarks() {
 
         List<Student> studentList = studentRepository.listAll();
