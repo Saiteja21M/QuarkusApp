@@ -13,8 +13,14 @@ public class StudentRepository {
 
     @Transactional
     public boolean saveStudentDetails(Student student) {
-        student.persist();
-        return student.isPersistent();
+        if (student.getStudentId() == 0) {
+            // New entity - persist it
+            student.persist();
+        } else {
+            // Existing entity - merge it using EntityManager
+            Student.getEntityManager().merge(student);
+        }
+        return true;
     }
 
 

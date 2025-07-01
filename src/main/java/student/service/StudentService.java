@@ -28,7 +28,7 @@ public class StudentService {
 
     public Response calculateTotalMarks(Student student) {
 
-        student.setTotalMarks(student.getSubject().getEnglish() + student.getSubject().getHindi() + student.getSubject().getTelugu() + student.getSubject().getMaths());
+        //student.setTotalMarks(student.getSubject().getEnglish() + student.getSubject().getHindi() + student.getSubject().getTelugu() + student.getSubject().getMaths());
         student.setTvShow(getStudentFavoriteShow());
         if (studentRepository.saveStudentDetails(student)) {
             logger.infov("saved {0} student : ", student);
