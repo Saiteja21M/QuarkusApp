@@ -15,8 +15,6 @@ import student.entity.Student;
 import student.entity.TvShow;
 import student.repository.StudentRepository;
 import student.scheduler.StudentMarksJob;
-import student.scheduler.StudentSyncJob;
-import student.scheduler.StudentReportJob;
 
 import java.util.List;
 import java.util.Set;
@@ -36,9 +34,6 @@ public class StudentService {
 
     @Inject
     Scheduler scheduler;
-
-    @Inject
-    io.agroal.api.AgroalDataSource dataSource;
 
     @Transactional
     public Response calculateTotalMarks(Student student) {
@@ -132,56 +127,6 @@ public class StudentService {
     }
 
     /**
-     * Creates a recurring trigger for periodic student data sync
-     */
-    public void scheduleRecurringStudentSync(int intervalInMinutes) {
-        try {
-            JobDetail jobDetail = JobBuilder.newJob(StudentSyncJob.class)
-                    .withIdentity("student-sync-job", "sync-jobs")
-                    .build();
-
-            // Create a recurring trigger
-            Trigger trigger = TriggerBuilder.newTrigger()
-                    .withIdentity("student-sync-trigger", "sync-triggers")
-                    .startNow()
-                    .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                            .withIntervalInMinutes(intervalInMinutes)
-                            .repeatForever())
-                    .build();
-
-            // Schedule the job
-            scheduler.scheduleJob(jobDetail, trigger);
-            logger.infov("Scheduled recurring student sync every {0} minutes", intervalInMinutes);
-
-        } catch (SchedulerException e) {
-            logger.error("Failed to schedule recurring student sync", e);
-        }
-    }
-
-    /**
-     * Creates a cron-based trigger for daily reports
-     */
-    public void scheduleDailyStudentReport(String cronExpression) {
-        try {
-            JobDetail jobDetail = JobBuilder.newJob(StudentReportJob.class)
-                    .withIdentity("daily-report-job", "report-jobs")
-                    .build();
-
-            // Create a cron trigger
-            Trigger trigger = TriggerBuilder.newTrigger()
-                    .withIdentity("daily-report-trigger", "report-triggers")
-                    .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression))
-                    .build();
-
-            scheduler.scheduleJob(jobDetail, trigger);
-            logger.infov("Scheduled daily student report with cron: {0}", cronExpression);
-
-        } catch (SchedulerException e) {
-            logger.error("Failed to schedule daily report", e);
-        }
-    }
-
-    /**
      * Cancels a scheduled job
      */
     public boolean cancelScheduledJob(String jobName, String groupName) {
@@ -250,57 +195,89 @@ public class StudentService {
     }
 
     /**
-     * Check what Quartz tables exist in the database
+     * Disables (pauses) a scheduled job - keeps it in database but stops execution
      */
-    public Response checkQuartzTables() {
-        try (java.sql.Connection connection = dataSource.getConnection()) {
-            java.sql.DatabaseMetaData metaData = connection.getMetaData();
-            java.sql.ResultSet tables = metaData.getTables(null, null, "%qrtz%", new String[]{"TABLE"});
+    public boolean disableJob(String jobName, String groupName) {
+        try {
+            JobKey jobKey = JobKey.jobKey(jobName, groupName);
             
-            List<String> tableNames = new java.util.ArrayList<>();
-            while (tables.next()) {
-                String tableName = tables.getString("TABLE_NAME");
-                tableNames.add(tableName);
+            // Check if job exists first
+            if (!scheduler.checkExists(jobKey)) {
+                logger.warnv("Job does not exist: {0}.{1}", groupName, jobName);
+                return false;
             }
             
-            if (tableNames.isEmpty()) {
-                // Try with uppercase
-                tables = metaData.getTables(null, null, "%QRTZ%", new String[]{"TABLE"});
-                while (tables.next()) {
-                    String tableName = tables.getString("TABLE_NAME");
-                    tableNames.add(tableName);
-                }
+            // Pause the job - this disables all triggers for this job
+            scheduler.pauseJob(jobKey);
+            logger.infov("Successfully disabled job: {0}.{1}", groupName, jobName);
+            return true;
+            
+        } catch (SchedulerException e) {
+            logger.error("Failed to disable job: " + jobName, e);
+            return false;
+        }
+    }
+
+    /**
+     * Enables (resumes) a previously disabled job
+     */
+    public boolean enableJob(String jobName, String groupName) {
+        try {
+            JobKey jobKey = JobKey.jobKey(jobName, groupName);
+            
+            // Check if job exists first
+            if (!scheduler.checkExists(jobKey)) {
+                logger.warnv("Job does not exist: {0}.{1}", groupName, jobName);
+                return false;
             }
             
-            if (tableNames.isEmpty()) {
-                // Try getting all tables and filter
-                tables = metaData.getTables(null, null, null, new String[]{"TABLE"});
-                List<String> allTables = new java.util.ArrayList<>();
-                while (tables.next()) {
-                    String tableName = tables.getString("TABLE_NAME");
-                    allTables.add(tableName);
-                    if (tableName.toLowerCase().contains("qrtz") || tableName.toLowerCase().contains("quartz")) {
-                        tableNames.add(tableName);
-                    }
-                }
-                
-                if (tableNames.isEmpty()) {
-                    return Response.ok().entity(java.util.Map.of(
-                        "quartzTables", tableNames,
-                        "message", "No Quartz tables found",
-                        "allTables", allTables.size() > 50 ? allTables.subList(0, 50) : allTables
-                    )).build();
-                }
+            // Resume the job - this re-enables all triggers for this job
+            scheduler.resumeJob(jobKey);
+            logger.infov("Successfully enabled job: {0}.{1}", groupName, jobName);
+            return true;
+            
+        } catch (SchedulerException e) {
+            logger.error("Failed to enable job: " + jobName, e);
+            return false;
+        }
+    }
+
+    /**
+     * Gets the status of a specific job (NORMAL, PAUSED, BLOCKED, ERROR, NONE)
+     */
+    public Response getJobStatus(String jobName, String groupName) {
+        try {
+            JobKey jobKey = JobKey.jobKey(jobName, groupName);
+            
+            if (!scheduler.checkExists(jobKey)) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Job not found: " + jobName + " in group: " + groupName).build();
+            }
+            
+            // Get all triggers for this job and their states
+            List<? extends Trigger> triggers = scheduler.getTriggersOfJob(jobKey);
+            List<java.util.Map<String, Object>> triggerStates = new java.util.ArrayList<>();
+            
+            for (Trigger trigger : triggers) {
+                Trigger.TriggerState state = scheduler.getTriggerState(trigger.getKey());
+                triggerStates.add(java.util.Map.of(
+                    "triggerName", trigger.getKey().getName(),
+                    "triggerGroup", trigger.getKey().getGroup(),
+                    "state", state.toString(),
+                    "nextFireTime", trigger.getNextFireTime(),
+                    "previousFireTime", trigger.getPreviousFireTime()
+                ));
             }
             
             return Response.ok().entity(java.util.Map.of(
-                "quartzTables", tableNames,
-                "message", "Found " + tableNames.size() + " Quartz tables"
+                "jobName", jobName,
+                "jobGroup", groupName,
+                "triggers", triggerStates
             )).build();
             
-        } catch (Exception e) {
-            logger.error("Failed to check Quartz tables", e);
-            return Response.serverError().entity("Failed to check tables: " + e.getMessage()).build();
+        } catch (SchedulerException e) {
+            logger.error("Failed to get job status: " + jobName, e);
+            return Response.serverError().entity("Failed to get job status: " + e.getMessage()).build();
         }
     }
 }

@@ -78,34 +78,6 @@ public class StudentResource {
         return Response.ok("Scheduled marks calculation for student: " + studentName).build();
     }
 
-    @POST
-    @Path("/schedule-daily-report")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response scheduleDailyReport(@HeaderParam("Authorization") String authorization,
-                                      @QueryParam("cronExpression") String cronExpression) {
-        if (!authorize.authorizeSender(authorization)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        }
-
-        // Default to daily at 9 AM if no cron provided
-        String cron = cronExpression != null ? cronExpression : "0 0 9 * * ?";
-        studentService.scheduleDailyStudentReport(cron);
-        return Response.ok("Scheduled daily report with cron: " + cron).build();
-    }
-
-    @POST
-    @Path("/schedule-sync")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response scheduleRecurringSync(@HeaderParam("Authorization") String authorization,
-                                        @QueryParam("intervalMinutes") int intervalMinutes) {
-        if (!authorize.authorizeSender(authorization)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        }
-
-        studentService.scheduleRecurringStudentSync(intervalMinutes);
-        return Response.ok("Scheduled recurring sync every " + intervalMinutes + " minutes").build();
-    }
-
     @DELETE
     @Path("/cancel-job")
     @Produces(MediaType.APPLICATION_JSON)
@@ -132,5 +104,82 @@ public class StudentResource {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity("Job not found or could not be cancelled: " + jobName).build();
         }
+    }
+
+    @PUT
+    @Path("/disable-job")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response disableJob(@HeaderParam("Authorization") String authorization,
+                              @QueryParam("jobName") String jobName,
+                              @QueryParam("groupName") String groupName) {
+        if (!authorize.authorizeSender(authorization)) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
+        if (jobName == null || jobName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Job name is required").build();
+        }
+
+        // Default group name if not provided
+        String group = groupName != null ? groupName : "DEFAULT";
+
+        boolean disabled = studentService.disableJob(jobName, group);
+
+        if (disabled) {
+            return Response.ok("Successfully disabled job: " + jobName + " in group: " + group).build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Job not found or could not be disabled: " + jobName).build();
+        }
+    }
+
+    @PUT
+    @Path("/enable-job")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response enableJob(@HeaderParam("Authorization") String authorization,
+                             @QueryParam("jobName") String jobName,
+                             @QueryParam("groupName") String groupName) {
+        if (!authorize.authorizeSender(authorization)) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
+        if (jobName == null || jobName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Job name is required").build();
+        }
+
+        // Default group name if not provided
+        String group = groupName != null ? groupName : "DEFAULT";
+
+        boolean enabled = studentService.enableJob(jobName, group);
+
+        if (enabled) {
+            return Response.ok("Successfully enabled job: " + jobName + " in group: " + group).build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("Job not found or could not be enabled: " + jobName).build();
+        }
+    }
+
+    @GET
+    @Path("/job-status")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getJobStatus(@HeaderParam("Authorization") String authorization,
+                               @QueryParam("jobName") String jobName,
+                               @QueryParam("groupName") String groupName) {
+        if (!authorize.authorizeSender(authorization)) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
+        if (jobName == null || jobName.trim().isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Job name is required").build();
+        }
+
+        // Default group name if not provided
+        String group = groupName != null ? groupName : "DEFAULT";
+
+        return studentService.getJobStatus(jobName, group);
     }
 }
