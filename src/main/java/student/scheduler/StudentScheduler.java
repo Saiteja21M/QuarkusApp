@@ -27,14 +27,14 @@ public class StudentScheduler {
     @Scheduled(every = "10m", identity = "calculate_student_total_marks")
     public void calculateStudentTotalMarks() {
 
-        List<Student> studentList = studentRepository.getStudentDetails();
+        List<Student> studentList = studentRepository.listAll();
 
         studentList.stream()
                 .filter(student -> student.getTotalMarks() == 0)
                 .forEach(student -> {
                     int totalMarks = student.getSubject().getEnglish() + student.getSubject().getTelugu() + student.getSubject().getMaths();
                     student.setTotalMarks(totalMarks);
-                    studentRepository.saveStudentDetails(student);
+                    studentRepository.persist(student);
                     logger.info("saved total marks = " + student.getTotalMarks() + " for student = " + student.getName());
                 });
         studentService.invalidateAll();

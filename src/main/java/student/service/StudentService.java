@@ -4,11 +4,11 @@ import io.quarkus.cache.CacheInvalidateAll;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
-import student.client.StudentClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.logging.Logger;
+import student.client.StudentClient;
 import student.entity.Student;
 import student.entity.TvShow;
-import org.jboss.logging.Logger;
 import student.repository.StudentRepository;
 
 import java.util.List;
@@ -28,17 +28,16 @@ public class StudentService {
 
     public Response calculateTotalMarks(Student student) {
 
-        //student.setTotalMarks(student.getSubject().getEnglish() + student.getSubject().getHindi() + student.getSubject().getTelugu() + student.getSubject().getMaths());
         student.setTvShow(getStudentFavoriteShow());
-        if (studentRepository.saveStudentDetails(student)) {
-            logger.infov("saved {0} student : ", student);
-            invalidateAll();
-        }
-        return studentRepository.getStudentDetailsByName(student.getName());
+        studentRepository.persist(student);
+        logger.infov("saved {0} student : ", student);
+        invalidateAll();
+
+        return Response.ok(studentRepository.findById((long) student.getStudentId())).build();
     }
 
     public Response getStudentDetails() {
-        List<Student> studentDetails = studentRepository.getStudentDetails();
+        List<Student> studentDetails = studentRepository.listAll();
         logger.infov("fetched {0} student details", studentDetails);
         return Response.ok(studentDetails).build();
 
@@ -57,7 +56,7 @@ public class StudentService {
     }
 
     public boolean deleteStudentById(long id) {
-        boolean deleted = studentRepository.deleteStudentById(id);
+        boolean deleted = studentRepository.deleteById(id);
         if (deleted) {
             logger.infov("deleted student id: {0} ", id);
             invalidateAll();
