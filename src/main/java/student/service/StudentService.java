@@ -5,15 +5,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 import org.quartz.*;
 import org.quartz.impl.matchers.GroupMatcher;
-import student.client.StudentClient;
 import student.entity.Student;
-import student.entity.TvShow;
 import student.repository.StudentRepository;
+import student.scheduler.StudentScheduler;
 
+import java.time.*;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -24,22 +24,18 @@ public class StudentService {
     StudentRepository studentRepository;
 
     @Inject
-    @RestClient
-    StudentClient studentClient;
-
-    @Inject
     Logger logger;
 
     @Inject
     Scheduler scheduler;
 
     @Transactional
-    public Response calculateTotalMarks(Student student) {
-
-        student.setTvShow(getStudentFavoriteShow());
+    public Response saveStudent(Student student) {
         studentRepository.persist(student);
         logger.infov("saved {0} student : ", student);
         invalidateAll();
+
+        scheduleJob(StudentScheduler.class, "syncStudents", "io.quarkus.scheduler", student.getStudentId());
 
         return Response.ok(studentRepository.findById((long) student.getStudentId())).build();
     }
@@ -70,16 +66,8 @@ public class StudentService {
         invalidateAll();
     }
 
-    public TvShow getStudentFavoriteShow() {
-        return new TvShow();
-    }
-
     @CacheInvalidateAll(cacheName = "student-details")
     public void invalidateAll() {
-    }
-
-    public Response getStudentDetailsByClient() {
-        return studentClient.getStudentDetails("124758");
     }
 
     @Transactional
@@ -108,7 +96,7 @@ public class StudentService {
     /**
      * Lists all currently scheduled jobs for debugging
      */
-    public Response listAllScheduledJobs() {
+    public Response getScheduledJobs() {
         try {
             List<String> jobInfo = new java.util.ArrayList<>();
 
@@ -244,6 +232,28 @@ public class StudentService {
         } catch (SchedulerException e) {
             logger.error("Failed to get job status: " + jobName, e);
             return Response.serverError().entity("Failed to get job status: " + e.getMessage()).build();
+        }
+    }
+
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
+    public void scheduleJob(Class<? extends Job> jobClass, String jobName, String groupName, int studentId) {
+        try {
+            JobDetail jobDetail = JobBuilder.newJob(jobClass)
+                    .withIdentity(jobName, groupName)
+                    .storeDurably(true)
+                    .build();
+
+            Trigger trigger = TriggerBuilder.newTrigger()
+                    .withIdentity(jobName + "Trigger" + studentId, groupName)
+                    .startAt(Date.from(LocalDateTime.now().plusSeconds(30)
+                            .atZone(ZoneId.systemDefault())
+                            .toInstant()))// Start 5 minutes from now
+                    .build();
+
+            scheduler.scheduleJob(jobDetail, trigger);
+            logger.infov("Scheduled job: {0}.{1} with start time: {2}", groupName, jobName, "5 minutes from now");
+        } catch (SchedulerException e) {
+            logger.error("Failed to schedule job: " + jobName, e);
         }
     }
 }

@@ -6,6 +6,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class Authorize {
 
     public boolean authorizeSender(String bearer) {
-        return Integer.parseInt(bearer) == 124758;
+        return Integer.parseInt(bearer) != 124758;
     }
 }

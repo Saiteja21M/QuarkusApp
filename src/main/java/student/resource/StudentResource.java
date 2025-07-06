@@ -23,10 +23,10 @@ public class StudentResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response setTotalStudentMarks(@HeaderParam("Authorization") String authorization, Student request) {
 
-        if (!authorize.authorizeSender(authorization)) {
+        if (authorize.authorizeSender(authorization)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
-        return studentService.calculateTotalMarks(request);
+        return studentService.saveStudent(request);
 
     }
 
@@ -35,22 +35,10 @@ public class StudentResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getTotalStudentDetails(@HeaderParam("Authorization") String authorization) {
 
-        if (!authorize.authorizeSender(authorization)) {
+        if (authorize.authorizeSender(authorization)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
         return studentService.getStudentDetails();
-
-    }
-
-    @GET
-    @Path("/student-details-byClient")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getTotalStudentDetailsByClient(@HeaderParam("Authorization") String authorization) {
-
-        if (!authorize.authorizeSender(authorization)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
-        }
-        return studentService.getStudentDetailsByClient();
 
     }
 
@@ -58,7 +46,7 @@ public class StudentResource {
     @Path("/delete-student")
     @Produces(MediaType.APPLICATION_JSON)
     public Response deleteStudentById(@HeaderParam("Authorization") String authorization, @QueryParam("id") long id) {
-        if (!authorize.authorizeSender(authorization)) {
+        if (authorize.authorizeSender(authorization)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
         return studentService.deleteStudentById(id) ? studentService.getStudentDetails() : Response.notModified().build();
@@ -68,9 +56,9 @@ public class StudentResource {
     @Path("/cancel-job")
     @Produces(MediaType.APPLICATION_JSON)
     public Response cancelScheduledJob(@HeaderParam("Authorization") String authorization,
-                                     @QueryParam("jobName") String jobName,
-                                     @QueryParam("groupName") String groupName) {
-        if (!authorize.authorizeSender(authorization)) {
+                                       @QueryParam("jobName") String jobName,
+                                       @QueryParam("groupName") String groupName) {
+        if (authorize.authorizeSender(authorization)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
@@ -96,9 +84,9 @@ public class StudentResource {
     @Path("/disable-job")
     @Produces(MediaType.APPLICATION_JSON)
     public Response disableJob(@HeaderParam("Authorization") String authorization,
-                              @QueryParam("jobName") String jobName,
-                              @QueryParam("groupName") String groupName) {
-        if (!authorize.authorizeSender(authorization)) {
+                               @QueryParam("jobName") String jobName,
+                               @QueryParam("groupName") String groupName) {
+        if (authorize.authorizeSender(authorization)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
@@ -124,9 +112,9 @@ public class StudentResource {
     @Path("/enable-job")
     @Produces(MediaType.APPLICATION_JSON)
     public Response enableJob(@HeaderParam("Authorization") String authorization,
-                             @QueryParam("jobName") String jobName,
-                             @QueryParam("groupName") String groupName) {
-        if (!authorize.authorizeSender(authorization)) {
+                              @QueryParam("jobName") String jobName,
+                              @QueryParam("groupName") String groupName) {
+        if (authorize.authorizeSender(authorization)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
@@ -152,9 +140,9 @@ public class StudentResource {
     @Path("/job-status")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getJobStatus(@HeaderParam("Authorization") String authorization,
-                               @QueryParam("jobName") String jobName,
-                               @QueryParam("groupName") String groupName) {
-        if (!authorize.authorizeSender(authorization)) {
+                                 @QueryParam("jobName") String jobName,
+                                 @QueryParam("groupName") String groupName) {
+        if (authorize.authorizeSender(authorization)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
@@ -167,5 +155,15 @@ public class StudentResource {
         String group = groupName != null ? groupName : "DEFAULT";
 
         return studentService.getJobStatus(jobName, group);
+    }
+
+    @GET
+    @Path("/scheduled-jobs")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getScheduledJobs(@HeaderParam("Authorization") String authorization) {
+        if (authorize.authorizeSender(authorization)) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+        return studentService.getScheduledJobs();
     }
 }

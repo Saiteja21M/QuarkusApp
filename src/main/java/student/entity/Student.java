@@ -13,16 +13,6 @@ public class Student {
     private int totalMarks;
     @OneToOne(cascade = CascadeType.ALL)
     private Subject subject;
-    @OneToOne(cascade = CascadeType.ALL)
-    private TvShow tvShow;
-
-    public TvShow getTvShow() {
-        return tvShow;
-    }
-
-    public void setTvShow(TvShow tvShow) {
-        this.tvShow = tvShow;
-    }
 
     public Subject getSubject() {
         return subject;
@@ -73,7 +63,6 @@ public class Student {
                 ", age=" + age +
                 ", totalMarks=" + totalMarks +
                 ", subject=" + subject +
-                ", tvShow=" + tvShow +
                 '}';
     }
 }
