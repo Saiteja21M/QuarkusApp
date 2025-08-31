@@ -1,7 +1,7 @@
-FROM nexus.bmwgroup.net:443/ubi9/openjdk-17:1.21
+####FROM nexus.bmwgroup.net:443/ubi9/openjdk-17:1.21 - in BMW only
+FROM registry.access.redhat.com/ubi9/openjdk-17:1.21
 
 ENV LANGUAGE='en_US:en'
-
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
 COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
