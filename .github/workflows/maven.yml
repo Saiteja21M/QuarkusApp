@@ -57,7 +57,7 @@ jobs:
           ECR_REPOSITORY: new-app-with-db
           IMAGE_TAG: ${{steps.increment-git-tag.outputs.git-tag}}
         run: |
-          docker build -f src/main/docker/Dockerfile.jvm -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{github.sha}} .
+          docker build -f src/main/docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{github.sha}} .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{github.sha}}
           echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >> $GITHUB_ENV
