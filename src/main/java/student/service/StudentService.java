@@ -68,6 +68,8 @@ public class StudentService {
 
     @CacheInvalidateAll(cacheName = "student-details")
     public void invalidateAll() {
+        // This method will invalidate the cache for all student details
+        logger.infov("Invalidated all student details cache");
     }
 
     @Transactional
@@ -240,12 +242,11 @@ public class StudentService {
         try {
             JobDetail jobDetail = JobBuilder.newJob(jobClass)
                     .withIdentity(jobName, groupName)
-                    .storeDurably(true)
                     .build();
 
             Trigger trigger = TriggerBuilder.newTrigger()
                     .withIdentity(jobName + "Trigger" + studentId, groupName)
-                    .startAt(Date.from(LocalDateTime.now().plusSeconds(30)
+                    .startAt(Date.from(LocalDateTime.now().plusSeconds(120)
                             .atZone(ZoneId.systemDefault())
                             .toInstant()))// Start 5 minutes from now
                     .build();

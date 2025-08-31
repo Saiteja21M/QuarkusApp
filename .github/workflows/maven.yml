@@ -54,31 +54,10 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{steps.login-ecr.outputs.registry}}
-          ECR_REPOSITORY: quarkus-app
+          ECR_REPOSITORY: new-app-with-db
           IMAGE_TAG: ${{steps.increment-git-tag.outputs.git-tag}}
         run: |
           docker build -f src/main/docker/Dockerfile.jvm -t $ECR_REGISTRY/$ECR_REPOSITORY:latest -t $ECR_REGISTRY/$ECR_REPOSITORY:${{github.sha}} .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{github.sha}}
           echo "IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:latest" >> $GITHUB_ENV
-
-      - name: Download task definition
-        run: |
-          aws ecs describe-task-definition --task-definition quarkus-app-task \
-            --query taskDefinition > ecs-task-def.json
-
-      - name: Update task definition with new image
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ecs-task-def.json
-          container-name: quarkus-app-container
-          image: ${{ env.IMAGE_URI }}
-
-      - name: Deploy to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: quarkus-app-service
-          cluster: quarkus-app-cluster
-          wait-for-service-stability: false
