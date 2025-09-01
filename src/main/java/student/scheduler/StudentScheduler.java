@@ -14,8 +14,6 @@ import student.service.StudentService;
 
 import java.util.List;
 
-import static student.model.QuartzJobModel.Identity.CALCULATE_STUDENT_MARKS;
-
 @ApplicationScoped
 public class StudentScheduler implements Job {
 
@@ -28,7 +26,7 @@ public class StudentScheduler implements Job {
     @Inject
     Logger logger;
 
-    @Scheduled(cron = "${jobs.student.calculatetotalmarks.cron}", identity = CALCULATE_STUDENT_MARKS)
+    @Scheduled(cron = "${jobs.student.calculatetotalmarks.cron}", identity = "CALCULATE_STUDENT_MARKS")
     public void calculateStudentTotalMarks() {
 
         logger.info("Start calculating student total marks");

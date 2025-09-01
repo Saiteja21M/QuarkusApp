@@ -1,7 +1,13 @@
 package student.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
+@Setter
+@Getter
+@ToString
 @Entity
 public class Student {
 
@@ -14,57 +20,6 @@ public class Student {
     @OneToOne(cascade = CascadeType.ALL)
     private Subject subject;
 
-    public Subject getSubject() {
-        return subject;
-    }
-
-    public void setSubject(Subject subject) {
-        this.subject = subject;
-    }
-
-
-    public int getTotalMarks() {
-        return totalMarks;
-    }
-
-    public void setTotalMarks(int totalMarks) {
-        this.totalMarks = totalMarks;
-    }
-
-    public int getAge() {
-        return age;
-    }
-
-    public void setAge(int age) {
-        this.age = age;
-    }
-
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public int getStudentId() {
-        return studentId;
-    }
-
-    public void setStudentId(int studentId) {
-        this.studentId = studentId;
-    }
-
-    @Override
-    public String toString() {
-        return "Student{" +
-                "name='" + name + '\'' +
-                ", age=" + age +
-                ", totalMarks=" + totalMarks +
-                ", subject=" + subject +
-                '}';
-    }
 }
 
 
