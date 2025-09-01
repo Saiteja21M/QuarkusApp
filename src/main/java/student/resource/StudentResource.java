@@ -47,7 +47,7 @@ public class StudentResource {
             @Parameter(description = "Student object containing marks", required = true) Student request) {
 
         if (authorize.authorizeSender(authorization)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         return studentService.saveStudent(request);
 
@@ -65,7 +65,7 @@ public class StudentResource {
             @Parameter(description = "Authorization token", required = true) @HeaderParam("Authorization") String authorization) {
 
         if (authorize.authorizeSender(authorization)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         return studentService.getStudentDetails();
 
@@ -84,7 +84,7 @@ public class StudentResource {
             @Parameter(description = "Authorization token", required = true) @HeaderParam("Authorization") String authorization,
             @Parameter(description = "ID of the student to delete", required = true) @QueryParam("id") long id) {
         if (authorize.authorizeSender(authorization)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return Response.status(Response.Status.UNAUTHORIZED).build();
         }
         return studentService.deleteStudentById(id) ? studentService.getStudentDetails()
                 : Response.notModified().build();
