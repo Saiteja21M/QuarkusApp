@@ -92,7 +92,7 @@ public class StudentService {
     public void scheduleJob(Class<? extends Job> jobClass, String jobName, String groupName, int studentId) {
         try {
             JobDetail jobDetail = JobBuilder.newJob(jobClass)
-                    .withIdentity(jobName, groupName)
+                    .withIdentity(jobName + studentId, groupName)
                     .build();
 
             Trigger trigger = TriggerBuilder.newTrigger()
