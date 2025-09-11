@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
+import io.micrometer.core.annotation.Counted;
 import org.jboss.logging.Logger;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
@@ -89,6 +90,7 @@ public class StudentService {
     }
 
     @Transactional(Transactional.TxType.NOT_SUPPORTED)
+    @Counted(value = "student_jobs_scheduled_total", description = "Total number of student jobs scheduled")
     public void scheduleJob(Class<? extends Job> jobClass, String jobName, String groupName, int studentId) {
         try {
             JobDetail jobDetail = JobBuilder.newJob(jobClass)
