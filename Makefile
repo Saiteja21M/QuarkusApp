@@ -2,7 +2,8 @@ build-deploy-image:
 	@echo "Creating DB..."
 	@docker rm -f quarkus-app
 	@docker rm -f my-postgres
-	@docker run --name my-postgres --network my-network -d -p 5433:5433 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres postgres:15
+	@docker network create my-network || true
+	@docker run --name my-postgres --network my-network -d -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e TZ=Asia/Kolkata -e PGTZ=Asia/Kolkata postgres
 	@echo "Building the Maven project..."
 	@mvn clean install
 	@echo "Maven project built successfully."
