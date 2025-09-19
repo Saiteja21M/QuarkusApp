@@ -101,11 +101,11 @@ public class StudentService {
                     .withIdentity(jobName + "Trigger" + studentId, groupName)
                     .startAt(Date.from(LocalDateTime.now().plusSeconds(120)
                             .atZone(ZoneId.systemDefault())
-                            .toInstant()))// Start 5 minutes from now
+                            .toInstant()))// Start 2 minutes from now
                     .build();
 
             scheduler.scheduleJob(jobDetail, trigger);
-            logger.infov("Scheduled job: {0}.{1} with start time: {2}", groupName, jobName, "5 minutes from now");
+            logger.infov("Scheduled job: {0}.{1} with start time: {2}", groupName, jobName, "2 minutes from now");
         } catch (SchedulerException e) {
             logger.error("Failed to schedule job: " + jobName, e);
         }
